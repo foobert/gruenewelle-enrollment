@@ -12,11 +12,12 @@
 
     <script>
       var app = Elm.Main.init({
-        node: document.getElementById("elm-code-is-loaded-here")
+        node: document.getElementById("elm-code-is-loaded-here"),
+        flags: JSON.parse(localStorage.getItem("model"))
       });
 
       app.ports.persistModel.subscribe(function(data) {
-        console.log("Data from Elm: ", data);
+        localStorage.setItem("model", JSON.stringify(data));
       });
     </script>
   </body>

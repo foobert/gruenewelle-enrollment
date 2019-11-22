@@ -4,6 +4,7 @@ import Browser
 import Debug exposing (log)
 import Html exposing (..)
 import Html.Events exposing (onClick, onInput)
+import Json.Decode exposing (Decoder, field, string)
 import Json.Encode as E
 import Task
 import Time exposing (..)
@@ -49,11 +50,24 @@ type alias Observation =
     }
 
 
-init : () -> ( Model, Cmd Msg )
-init _ =
-    ( Model [] "Kurt Eisener"
+init : Json.Decode.Value -> ( Model, Cmd Msg )
+init observations =
+    ( Model (initObservations observations) "Kurt Eisener"
     , Cmd.none
     )
+
+
+initObservations json =
+    let
+        result =
+            log "decoded" (Json.Decode.decodeValue observationsDecoder json)
+    in
+    case result of
+        Ok o ->
+            o
+
+        Err _ ->
+            []
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -102,6 +116,41 @@ encodeObservation o =
         , ( "intersection", E.string o.intersection )
         , ( "phase", E.string (phaseToString o.phase) )
         ]
+
+
+observationsDecoder : Decoder (List Observation)
+observationsDecoder =
+    field "observations" (Json.Decode.list observationDecoder)
+
+
+observationDecoder : Decoder Observation
+observationDecoder =
+    Json.Decode.map3 Observation
+        (field "posix" posixDecoder)
+        (field "phase" lightPhaseDecoder)
+        (field "intersection" Json.Decode.string)
+
+
+posixDecoder =
+    Json.Decode.map millisToPosix
+        Json.Decode.int
+
+
+lightPhaseDecoder =
+    Json.Decode.map stringToLightPhase
+        Json.Decode.string
+
+
+stringToLightPhase s =
+    case s of
+        "Red" ->
+            Red
+
+        "Green" ->
+            Green
+
+        _ ->
+            Green
 
 
 subscriptions : Model -> Sub Msg
