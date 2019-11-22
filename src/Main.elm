@@ -6,6 +6,15 @@ import Html exposing (..)
 import Html.Events exposing (onClick, onInput)
 import Json.Decode exposing (Decoder, field, string)
 import Json.Encode as E
+import Observation
+    exposing
+        ( Intersection
+        , LightPhase(..)
+        , Observation
+        , encodeObservations
+        , lightPhaseToString
+        , observationsDecoder
+        )
 import Task
 import Time exposing (..)
 
@@ -26,25 +35,9 @@ type Msg
     | Intersection Intersection
 
 
-type LightPhase
-    = Green
-    | Red
-
-
-type alias Intersection =
-    String
-
-
 type alias Model =
     { observations : List Observation
     , currentIntersection : Intersection
-    }
-
-
-type alias Observation =
-    { timestamp : Posix
-    , phase : LightPhase
-    , intersection : Intersection
     }
 
 
@@ -60,12 +53,7 @@ initObservations json =
         result =
             log "decoded" (Json.Decode.decodeValue observationsDecoder json)
     in
-    case result of
-        Ok o ->
-            o
-
-        Err _ ->
-            []
+    Result.withDefault [] result
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -99,51 +87,7 @@ port persistModel : E.Value -> Cmd msg
 
 encodeModel : Model -> E.Value
 encodeModel model =
-    E.object [ ( "observations", E.list encodeObservation model.observations ) ]
-
-
-encodeObservation : Observation -> E.Value
-encodeObservation o =
-    E.object
-        [ ( "posix", E.int (posixToMillis o.timestamp) )
-        , ( "intersection", E.string o.intersection )
-        , ( "phase", E.string (phaseToString o.phase) )
-        ]
-
-
-observationsDecoder : Decoder (List Observation)
-observationsDecoder =
-    field "observations" (Json.Decode.list observationDecoder)
-
-
-observationDecoder : Decoder Observation
-observationDecoder =
-    Json.Decode.map3 Observation
-        (field "posix" posixDecoder)
-        (field "phase" lightPhaseDecoder)
-        (field "intersection" Json.Decode.string)
-
-
-posixDecoder =
-    Json.Decode.map millisToPosix
-        Json.Decode.int
-
-
-lightPhaseDecoder =
-    Json.Decode.map stringToLightPhase
-        Json.Decode.string
-
-
-stringToLightPhase s =
-    case s of
-        "Red" ->
-            Red
-
-        "Green" ->
-            Green
-
-        _ ->
-            Green
+    E.object [ ( "observations", encodeObservations model.observations ) ]
 
 
 subscriptions : Model -> Sub Msg
@@ -185,15 +129,6 @@ observation o =
     li [] [ text (String.fromInt (posixToMillis o.timestamp)), phase o.phase, text o.intersection ]
 
 
-phaseToString p =
-    case p of
-        Red ->
-            "Red"
-
-        Green ->
-            "Green"
-
-
 phase : LightPhase -> Html msg
 phase l =
-    text (phaseToString l)
+    text (lightPhaseToString l)
