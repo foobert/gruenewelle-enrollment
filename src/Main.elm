@@ -23,9 +23,7 @@ type Msg
     = TurnGreen
     | TurnRed
     | NewTime Posix LightPhase String
-    | AppendObservation
     | Intersection Intersection
-    | PersistModel
 
 
 type LightPhase
@@ -80,25 +78,20 @@ update msg model =
             ( model, Task.perform (\t -> NewTime t Red model.currentIntersection) Time.now )
 
         NewTime t p i ->
-            ( log "model"
-                { model
-                    | observations =
-                        List.append model.observations
-                            [ Observation t p i ]
-                }
-            , Cmd.none
-            )
-
-        AppendObservation ->
-            ( model
-            , Cmd.none
+            let
+                updatedModel =
+                    { model
+                        | observations =
+                            List.append model.observations
+                                [ Observation t p i ]
+                    }
+            in
+            ( log "model" updatedModel
+            , persistModel (encodeModel updatedModel)
             )
 
         Intersection s ->
             ( { model | currentIntersection = s }, Cmd.none )
-
-        PersistModel ->
-            ( model, persistModel (encodeModel model) )
 
 
 port persistModel : E.Value -> Cmd msg
@@ -166,7 +159,6 @@ view model =
         , button [ onClick TurnRed ] [ text "RED" ]
         , button [ onClick TurnGreen ] [ text "GREEN" ]
         , observationLog model
-        , button [ onClick PersistModel ] [ text "PERSIST" ]
         ]
 
 
