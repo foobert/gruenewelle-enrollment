@@ -18,9 +18,7 @@ main =
 
 
 type Msg
-    = Increment
-    | Decrement
-    | TurnGreen
+    = TurnGreen
     | TurnRed
     | NewTime Posix LightPhase
     | AppendObservation
@@ -32,9 +30,7 @@ type LightPhase
 
 
 type alias Model =
-    { counter : Int
-    , other : Int
-    , observations : List Observation
+    { observations : List Observation
     }
 
 
@@ -46,7 +42,7 @@ type alias Observation =
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( Model 0 42 []
+    ( Model []
     , Cmd.none
     )
 
@@ -54,12 +50,6 @@ init _ =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Increment ->
-            ( { model | counter = model.counter + 1 }, Cmd.none )
-
-        Decrement ->
-            ( { model | counter = model.counter - 1 }, Cmd.none )
-
         TurnGreen ->
             ( model, Task.perform (\t -> NewTime t Green) Time.now )
 
@@ -86,9 +76,6 @@ view : Model -> Html Msg
 view model =
     div []
         [ intersectionSelect model
-        , button [ onClick Decrement ] [ text "-" ]
-        , div [] [ text (String.fromInt model.counter) ]
-        , button [ onClick Increment ] [ text "+" ]
         , button [ onClick TurnRed ] [ text "RED" ]
         , button [ onClick TurnGreen ] [ text "GREEN" ]
         , observationLog model
