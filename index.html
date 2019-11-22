@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Main</title>
+  </head>
+
+  <body>
+    <div id="elm-code-is-loaded-here"></div>
+
+    <script src="elm.js"></script>
+
+    <script>
+      var app = Elm.Main.init({
+        node: document.getElementById("elm-code-is-loaded-here")
+      });
+
+      app.ports.persistModel.subscribe(function(data) {
+        console.log("Data from Elm: ", data);
+      });
+    </script>
+  </body>
+</html>

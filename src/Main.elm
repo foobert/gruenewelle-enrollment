@@ -1,9 +1,10 @@
-module Main exposing (Model, Msg(..), init, intersectionSelect, main, update, view)
+port module Main exposing (Model, Msg(..), init, intersectionSelect, main, update, view)
 
 import Browser
 import Debug exposing (log)
 import Html exposing (..)
 import Html.Events exposing (onClick, onInput)
+import Json.Encode as E
 import Task
 import Time exposing (..)
 
@@ -23,6 +24,7 @@ type Msg
     | NewTime Posix LightPhase String
     | AppendObservation
     | Intersection Intersection
+    | PersistModel
 
 
 type LightPhase
@@ -81,6 +83,26 @@ update msg model =
         Intersection s ->
             ( { model | currentIntersection = s }, Cmd.none )
 
+        PersistModel ->
+            ( model, persistModel (encodeModel model) )
+
+
+port persistModel : E.Value -> Cmd msg
+
+
+encodeModel : Model -> E.Value
+encodeModel model =
+    E.object [ ( "observations", E.list encodeObservation model.observations ) ]
+
+
+encodeObservation : Observation -> E.Value
+encodeObservation o =
+    E.object
+        [ ( "posix", E.int (posixToMillis o.timestamp) )
+        , ( "intersection", E.string o.intersection )
+        , ( "phase", E.string (phaseToString o.phase) )
+        ]
+
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
@@ -95,6 +117,7 @@ view model =
         , button [ onClick TurnRed ] [ text "RED" ]
         , button [ onClick TurnGreen ] [ text "GREEN" ]
         , observationLog model
+        , button [ onClick PersistModel ] [ text "PERSIST" ]
         ]
 
 
@@ -121,11 +144,15 @@ observation o =
     li [] [ text (String.fromInt (posixToMillis o.timestamp)), phase o.phase, text o.intersection ]
 
 
-phase : LightPhase -> Html msg
-phase l =
-    case l of
+phaseToString p =
+    case p of
         Red ->
-            text "Red"
+            "Red"
 
         Green ->
-            text "Green"
+            "Green"
+
+
+phase : LightPhase -> Html msg
+phase l =
+    text (phaseToString l)
