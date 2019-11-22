@@ -110,9 +110,19 @@ intersectionSelect model =
 
 observationLog model =
     div []
-        (List.map observation model.observations)
+        (List.reverse (List.map observation model.observations))
 
 
 observation : Observation -> Html msg
 observation o =
-    li [] [ text (String.fromInt (posixToMillis o.timestamp)) ]
+    li [] [ text (String.fromInt (posixToMillis o.timestamp)), phase o.phase ]
+
+
+phase : LightPhase -> Html msg
+phase l =
+    case l of
+        Red ->
+            text "Red"
+
+        Green ->
+            text "Green"
