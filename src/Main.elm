@@ -5,6 +5,7 @@ import Debug exposing (log)
 import Html exposing (..)
 import Html.Attributes exposing (class)
 import Html.Events exposing (onClick, onInput)
+import Http
 import Json.Decode exposing (Decoder, field, string)
 import Json.Encode as E
 import Observation
@@ -34,17 +35,20 @@ type Msg
     | TurnRed
     | NewTime Posix LightPhase String
     | Intersection Intersection
+    | Upload
+    | UploadDone (Result Http.Error ())
 
 
 type alias Model =
     { observations : List Observation
     , currentIntersection : Intersection
+    , uploading : Bool
     }
 
 
 init : Json.Decode.Value -> ( Model, Cmd Msg )
 init observations =
-    ( Model (initObservations observations) "Kurt Eisener"
+    ( Model (initObservations observations) "Kurt Eisener" False
     , Cmd.none
     )
 
@@ -82,6 +86,22 @@ update msg model =
         Intersection s ->
             ( { model | currentIntersection = s }, Cmd.none )
 
+        Upload ->
+            ( { model | uploading = True }
+            , Http.request
+                { method = "PUT"
+                , headers = []
+                , url = "https://api.jsonbin.io/b/5dea2043cb4ac60420752ec1"
+                , body = Http.jsonBody (encodeModel model)
+                , expect = Http.expectWhatever UploadDone
+                , timeout = Nothing
+                , tracker = Nothing
+                }
+            )
+
+        UploadDone _ ->
+            ( { model | uploading = False }, Cmd.none )
+
 
 port persistModel : E.Value -> Cmd msg
 
@@ -105,10 +125,11 @@ view model =
 
             --, text ("Current intersection: " ++ model.currentIntersection)
             , div [ class "field", class "is-grouped" ]
-                [ div [ class "control" ] [ button [ class "button", onClick TurnRed ] [ text "RED" ] ]
-                , div [ class "control" ] [ button [ class "button", onClick TurnGreen ] [ text "GREEN" ] ]
+                [ div [ class "control" ] [ button [ class "button", onClick TurnRed ] [ text "Red" ] ]
+                , div [ class "control" ] [ button [ class "button", onClick TurnGreen ] [ text "Green" ] ]
                 ]
             , observationLog model
+            , uploadButton model
             ]
         ]
 
@@ -128,6 +149,18 @@ intersectionSelect model =
                 ]
             ]
         ]
+
+
+uploadButton model =
+    button (List.append [ class "button", onClick Upload ] (uploadButtonClass model)) [ text "Upload to jsonbin.io" ]
+
+
+uploadButtonClass model =
+    if model.uploading then
+        [ class "is-loading" ]
+
+    else
+        []
 
 
 observationLog model =
