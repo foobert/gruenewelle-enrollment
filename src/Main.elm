@@ -3,6 +3,7 @@ port module Main exposing (Model, Msg(..), init, intersectionSelect, main, updat
 import Browser
 import Debug exposing (log)
 import Html exposing (..)
+import Html.Attributes exposing (class)
 import Html.Events exposing (onClick, onInput)
 import Json.Decode exposing (Decoder, field, string)
 import Json.Encode as E
@@ -97,36 +98,76 @@ subscriptions model =
 
 view : Model -> Html Msg
 view model =
-    div []
-        [ intersectionSelect model
-        , text ("Current intersection: " ++ model.currentIntersection)
-        , button [ onClick TurnRed ] [ text "RED" ]
-        , button [ onClick TurnGreen ] [ text "GREEN" ]
-        , observationLog model
+    div [ class "section" ]
+        [ div [ class "container" ]
+            [ h1 [ class "title" ] [ text "Grüne Welle" ]
+            , intersectionSelect model
+
+            --, text ("Current intersection: " ++ model.currentIntersection)
+            , div [ class "field", class "is-grouped" ]
+                [ div [ class "control" ] [ button [ class "button", onClick TurnRed ] [ text "RED" ] ]
+                , div [ class "control" ] [ button [ class "button", onClick TurnGreen ] [ text "GREEN" ] ]
+                ]
+            , observationLog model
+            ]
         ]
 
 
 intersectionSelect model =
-    div []
-        [ text "Intersection"
-        , select [ onInput Intersection ]
-            [ option [] [ text "Kurt Eisener" ]
-            , option [] [ text "Axel" ]
-            , option [] [ text "Löffelfamilie" ]
-            , option [] [ text "Waffeln" ]
-            , option [] [ text "Polizei" ]
+    div [ class "field" ]
+        [ label [ class "label" ] [ text "Intersection" ]
+        , div [ class "control" ]
+            [ div [ class "select" ]
+                [ select [ onInput Intersection ]
+                    [ option [] [ text "Kurt Eisener" ]
+                    , option [] [ text "Axel" ]
+                    , option [] [ text "Löffelfamilie" ]
+                    , option [] [ text "Waffeln" ]
+                    , option [] [ text "Polizei" ]
+                    ]
+                ]
             ]
         ]
 
 
 observationLog model =
     div []
-        (List.reverse (List.map observation model.observations))
+        [ p [] [ text ("Collected " ++ String.fromInt (List.length model.observations) ++ " observations so far") ]
+        , latestObservation model
+        ]
+
+
+latestObservation model =
+    let
+        mo =
+            List.head (List.reverse model.observations)
+    in
+    case mo of
+        Just o ->
+            observation o
+
+        Nothing ->
+            div [] []
 
 
 observation : Observation -> Html msg
 observation o =
-    li [] [ text (String.fromInt (posixToMillis o.timestamp)), phase o.phase, text o.intersection ]
+    p [] [ text (String.concat [ o.intersection, " turned ", lightPhaseToString o.phase, " at ", formatTime o.timestamp ]) ]
+
+
+formatTime : Posix -> String
+formatTime ts =
+    let
+        h =
+            String.padLeft 2 '0' (String.fromInt (Time.toHour utc ts))
+
+        m =
+            String.padLeft 2 '0' (String.fromInt (Time.toMinute utc ts))
+
+        s =
+            String.padLeft 2 '0' (String.fromInt (Time.toSecond utc ts))
+    in
+    h ++ ":" ++ m ++ ":" ++ s
 
 
 phase : LightPhase -> Html msg
