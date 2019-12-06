@@ -10,4 +10,16 @@ jobs:
     - name: Setup Elm
       uses: justgook/setup-elm@v1
     - name: Build application
-      run: elm make src/Main.elm --output elm.js
+      run:  |
+          elm make src/Main.elm --output elm.js
+          mkdir -p public
+          cp elm.js public
+          cp index.html public
+    - name: Deploy
+        if: success()
+        uses: crazy-max/ghaction-github-pages@v1
+        with:
+          target_branch: gh-pages
+          build_dir: public
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
