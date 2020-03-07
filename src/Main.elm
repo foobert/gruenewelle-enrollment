@@ -37,6 +37,7 @@ type Msg
     | Intersection Intersection
     | Upload
     | UploadDone (Result Http.Error ())
+    | ClearObservations
 
 
 type alias Model =
@@ -102,6 +103,9 @@ update msg model =
         UploadDone _ ->
             ( { model | uploading = False }, Cmd.none )
 
+        ClearObservations ->
+            ( { model | observations = [] }, Cmd.none )
+
 
 port persistModel : E.Value -> Cmd msg
 
@@ -130,6 +134,7 @@ view model =
                 ]
             , observationLog model
             , uploadButton model
+            , button [ class "button", onClick ClearObservations ] [ text "Clear" ]
             ]
         ]
 
